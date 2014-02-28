@@ -10,43 +10,34 @@ var http = require('http');
 var path = require('path');
 
 //region REDIS
-
-
-//region TEST
-// test.js
-var    redis = require('redis')
-    ,    client = redis.createClient()
-    ;
-// отлавливаем ошибки
-client.on("error", function (err) {
-    console.log("Error: " + err);
-});
-
-// Попробуем записать и прочитать
-client.set('myKey', 'Hello Redis', function (err, repl) {
-    if (err) {
-        // Оо что то случилось при записи
-        console.log('Что то случилось при записи: ' + err);
-        client.quit();
-    } else {
-        // Прочтем записанное
-        client.get('myKey', function (err, repl) {
-            //Закрываем соединение, так как нам оно больше не нужно
-            client.quit();
-            if (err) {
-                console.log('Что то случилось при чтении: ' + err);
-            } else if (repl) {
-                // Ключ найден
-                console.log('Ключ: ' + repl);
-            } else {
-                // Ключ ненайден
-                console.log('Ключ ненайден.')
-
-            };
-        });
-    };
-});
-//endregion
+var redis = require('redis');
+client = redis.createClient();
+SiteModel = require('./model/siteModel');
+var Site = new SiteModel(client);
+var google = Site.create('www.google.ru');
+google.save(
+    function(err, res){
+        console.log("save: "+this.url+", on: "+google.time+"; err: "+err);
+        Site.findByUrl(
+            'www.google.ru',
+            function(err, res, s){
+                if(err){
+                    console.log("Find by url error: "+err);
+                    Site.client.quit();
+                }else if(res){
+                    console.log('Site found url: '+res.url+"; time: "+res.time);
+                    google.remove(function(err, res) {
+                        console.log('Remove');
+                        this.client.quit();
+                    });
+                }else {
+                    console.log('Site not found');
+                    this.client.quit();
+                }
+            }
+        )
+    }
+)
 //endregion
 
 
